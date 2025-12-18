@@ -1,0 +1,41 @@
+let ScannerList =
+externaldata(ToolName:string)
+[
+  @"https://raw.githubusercontent.com/CyberArk0961/Scanner-Tools/refs/heads/main/All_Scanners_Tool_Names.csv"
+]
+with (format="csv", ignoreFirstRecord=true);
+
+union
+(
+    DeviceProcessEvents
+    | where Timestamp > ago(30d)
+    | extend NormalizedProcess = tolower(ProcessName)
+    | join kind=inner (
+        ScannerList
+        | extend ToolLower = tolower(ToolName)
+    ) on $left.NormalizedProcess contains ToolLower
+    | project
+        Timestamp,
+        DeviceName,
+        AccountName,
+        Tool = ToolName,
+        DetectionType = "Running Process",
+        ProcessName,
+        FolderPath,
+        SHA256
+),
+(
+    DeviceTvmSoftwareInventory
+    | join kind=inner (
+        ScannerList
+        | extend ToolLower = tolower(ToolName)
+    ) on $left.SoftwareName contains ToolLower
+    | project
+        DeviceName,
+        Tool = ToolName,
+        DetectionType = "Installed Software",
+        SoftwareName,
+        SoftwareVersion,
+        Vendor
+)
+| sort by Timestamp desc
