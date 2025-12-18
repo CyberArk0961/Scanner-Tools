@@ -4,12 +4,11 @@ externaldata(ToolName:string)
   @"https://raw.githubusercontent.com/CyberArk0961/Scanner-Tools/refs/heads/main/All_Scanners_Tool_Names.csv"
 ]
 with (format="csv", ignoreFirstRecord=true)
-| extend ToolLower = tolower(ToolName);
-
+| project ToolLower = tolower(ToolName);
 DeviceProcessEvents
 | where Timestamp > ago(30d)
 | extend ProcLower = tolower(ProcessName)
-| where ProcLower has_any (ScannerList | project ToolLower)
+| where ProcLower has_any (ScannerList)
 | project
     Timestamp,
     DeviceName,
